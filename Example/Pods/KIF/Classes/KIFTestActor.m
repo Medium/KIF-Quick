@@ -1,5 +1,5 @@
 //
-//  KIFTester.m
+//  KIFTestActor.m
 //  KIF
 //
 //  Created by Brian Nickel on 12/13/12.
@@ -7,16 +7,32 @@
 //  See the LICENSE file distributed with this work for the terms under
 //  which Square, Inc. licenses this file to you.
 
-#import <XCTest/XCTest.h>
-#import "NSException-KIFAdditions.h"
-#import "KIFTestActor.h"
-#import "NSError-KIFAdditions.h"
 #import <dlfcn.h>
 #import <objc/runtime.h>
+#import <XCTest/XCTest.h>
+
+#import "KIFTestActor_Private.h"
+
+#import "KIFAccessibilityEnabler.h"
+#import "KIFTextInputTraitsOverrides.h"
+#import "NSError-KIFAdditions.h"
+#import "NSException-KIFAdditions.h"
 #import "UIApplication-KIFAdditions.h"
 #import "UIView-KIFAdditions.h"
 
 @implementation KIFTestActor
+
++ (void)load
+{
+    @autoreleasepool {
+        if (NSClassFromString(@"UIApplication")) {
+            [UIApplication swizzleRunLoop];
+            NSLog(@"KIFTester loaded");
+        } else {
+            NSLog(@"KIFTester skipping runloop swizzling, no UIApplication class found.");
+        }
+    }
+}
 
 - (instancetype)initWithFile:(NSString *)file line:(NSInteger)line delegate:(id<KIFTestActorDelegate>)delegate
 {
@@ -28,6 +44,7 @@
         _executionBlockTimeout = [[self class] defaultTimeout];
         _animationWaitingTimeout = [[self class] defaultAnimationWaitingTimeout];
         _animationStabilizationTimeout = [[self class] defaultAnimationStabilizationTimeout];
+        _mainThreadDispatchStabilizationTimeout = [[self class] defaultMainThreadDispatchStabilizationTimeout];
     }
     return self;
 }
@@ -43,8 +60,27 @@
     return self;
 }
 
+- (instancetype)usingAnimationWaitingTimeout:(NSTimeInterval)animationWaitingTimeout;
+{
+    self.animationWaitingTimeout = animationWaitingTimeout;
+    return self;
+}
+
+- (instancetype)usingAnimationStabilizationTimeout:(NSTimeInterval)animationStabilizationTimeout;
+{
+    self.animationStabilizationTimeout = animationStabilizationTimeout;
+    return self;
+}
+
 - (BOOL)tryRunningBlock:(KIFTestExecutionBlock)executionBlock complete:(KIFTestCompletionBlock)completionBlock timeout:(NSTimeInterval)timeout error:(out NSError **)error
 {
+    // Ensure that regardless of whether tests subclass KIFTestCase or not,
+    // accessibility will have been enabled.
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        KIFEnableAccessibility();
+    });
+
     NSDate *startDate = [NSDate date];
     KIFTestStepResult result;
     NSError *internalError;
@@ -97,6 +133,7 @@
 
 static NSTimeInterval KIFTestStepDefaultAnimationWaitingTimeout = 0.5;
 static NSTimeInterval KIFTestStepDefaultAnimationStabilizationTimeout = 0.5;
+static NSTimeInterval KIFTestStepDefaultMainThreadDispatchStabilizationTimeout = 0.5;
 static NSTimeInterval KIFTestStepDefaultTimeout = 10.0;
 static NSTimeInterval KIFTestStepDelay = 0.1;
 
@@ -119,6 +156,17 @@ static NSTimeInterval KIFTestStepDelay = 0.1;
 {
     KIFTestStepDefaultAnimationStabilizationTimeout = newDefaultAnimationStabilizationTimeout;
 }
+
++ (NSTimeInterval)defaultMainThreadDispatchStabilizationTimeout
+{
+    return KIFTestStepDefaultMainThreadDispatchStabilizationTimeout;
+}
+
++ (void)setDefaultMainThreadDispatchStabilizationTimeout:(NSTimeInterval)newDefaultMainThreadDispatchStabilizationTimeout;
+{
+    KIFTestStepDefaultMainThreadDispatchStabilizationTimeout = newDefaultMainThreadDispatchStabilizationTimeout;
+}
+
 
 + (NSTimeInterval)defaultTimeout;
 {
@@ -198,22 +246,6 @@ static NSTimeInterval KIFTestStepDelay = 0.1;
     NSException *newException = [NSException failureInFile:self.file atLine:(int)self.line withDescription:@"Failure in child step: %@", firstException.description];
 
     [self.delegate failWithExceptions:[exceptions arrayByAddingObject:newException] stopTest:stop];
-}
-
-@end
-
-@interface UIApplication (KIFTestActorLoading)
-
-@end
-
-@implementation UIApplication (KIFTestActorLoading)
-
-+ (void)load
-{
-    @autoreleasepool {
-        NSLog(@"KIFTester loaded");
-        [UIApplication swizzleRunLoop];
-    }
 }
 
 @end

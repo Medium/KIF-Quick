@@ -1,21 +1,15 @@
 Pod::Spec.new do |s|
   s.name             = 'KIF-Quick'
-  s.version          = '1.1.0'
+  s.version          = '2.0.0'
   s.summary          = 'Enable Behaviour-Driven Integration Tests built on KIF using Quick syntax'
-  s.description      = <<-DESC
-Write Quick specs to drive KIF actors through user interface actions.
-		   * share common setup using spec context
-           * report XCTest failure with file name and line number
-           * install compatible versions of KIF and Quick
-           * supports Swift 3.0, 2.3, 2.2
-                       DESC
-  s.homepage         = 'https://github.com/doordash/KIF-Quick'
+  s.homepage         = 'https://github.com/Medium/KIF-Quick'
   s.license          = { :type => 'MIT', :file => 'LICENSE' }
-  s.author           = { 'Paul Zabelin' => 'paulz@doordash.com' }
-  s.source           = { :git => 'https://github.com/doordash/KIF-Quick.git', :tag => s.version.to_s }
-  s.platform     = :ios, '8.0'
+  s.authors          = { 'Scott Delly' => 'delly@medium.com' }
+  s.source           = { :git => 'https://github.com/Medium/KIF-Quick', :tag => s.version.to_s }
+  s.swift_version = '5.0'
+  s.ios.deployment_target  = '10.0'
   s.source_files = 'KIF-Quick/Classes'
   s.framework = 'XCTest'
-  s.dependency 'KIF', '~> 3.0'
-  s.dependency 'Quick', '~> 1.0'
+  s.dependency 'KIF'
+  s.dependency 'Quick'
 end

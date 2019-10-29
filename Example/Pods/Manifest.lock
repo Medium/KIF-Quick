@@ -1,24 +1,29 @@
 PODS:
-  - KIF (3.5.1):
-    - KIF/Core (= 3.5.1)
-  - KIF-Quick (1.1.0):
-    - KIF (~> 3.0)
-    - Quick (~> 1.0)
-  - KIF/Core (3.5.1)
-  - Quick (1.0.0)
+  - KIF (3.7.8):
+    - KIF/Core (= 3.7.8)
+  - KIF-Quick (2.0.0):
+    - KIF
+    - Quick
+  - KIF/Core (3.7.8)
+  - Quick (2.2.0)
 
 DEPENDENCIES:
   - KIF-Quick (from `../`)
+
+SPEC REPOS:
+  https://github.com/CocoaPods/Specs.git:
+    - KIF
+    - Quick
 
 EXTERNAL SOURCES:
   KIF-Quick:
     :path: "../"
 
 SPEC CHECKSUMS:
-  KIF: 082eb65279e51c3092923802849eb796a04982ab
-  KIF-Quick: d2b9cd7d28405983adf61d5b582165226aca93b7
-  Quick: 8024e4a47e6cc03a9d5245ef0948264fc6d27cff
+  KIF: 52e1af1a78cf6fe4ec6777b14776f3dd2eccc32e
+  KIF-Quick: 7150d8f46b0e21b771241f098c83cd7036a6d9d2
+  Quick: 7fb19e13be07b5dfb3b90d4f9824c855a11af40e
 
-PODFILE CHECKSUM: 48447a2c9dab6d7233a99da1a7a9670158e4eb0e
+PODFILE CHECKSUM: 241b5a17017a0df7d764846219d4969c07a20684
 
-COCOAPODS: 1.1.1
+COCOAPODS: 1.8.4

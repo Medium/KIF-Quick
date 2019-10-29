@@ -11,7 +11,16 @@
 #import <UIKit/UIKit.h>
 #import "UIView-KIFAdditions.h"
 
+
+#if DEPRECATE_KIF_TESTER
+// Add `-DDEPRECATE_KIF_TESTER=1` to OTHER_CFLAGS if you'd like to prevent usage of `tester`.
+@class KIFUITestActor;
+KIFUITestActor *_KIF_tester() __attribute__((deprecated("Use of `tester` has been deprecated; Use `viewTester` instead.")));
+#define tester _KIF_tester()
+#else
 #define tester KIFActorWithClass(KIFUITestActor)
+#endif
+
 
 /*!
  @enum KIFSwipeDirection
@@ -37,6 +46,21 @@ typedef NS_ENUM(NSUInteger, KIFSwipeDirection) {
 typedef NS_ENUM(NSUInteger, KIFPickerType) {
     KIFUIPickerView,
     KIFUIDatePicker
+};
+
+/*!
+ @enum KIFPickerSearchOrder
+ @abstract Order in which to search picker values.
+ @constant KIFPickerSearchForwardFromStart Search from first value forward.
+ @constant KIFPickerSearchBackwardFromEnd Search from last value backwards.
+ @constant KIFPickerSearchForwardFromCurrentValue Search from current value forward.
+ @constant KIFPickerSearchBackwardFromCurrentValue Search from current value backwards.
+ */
+typedef NS_ENUM(NSUInteger, KIFPickerSearchOrder) {
+    KIFPickerSearchForwardFromStart = 0,
+    KIFPickerSearchBackwardFromEnd = 1,
+    KIFPickerSearchForwardFromCurrentValue = 2,
+    KIFPickerSearchBackwardFromCurrentValue = 3
 };
 
 /*!
@@ -69,6 +93,15 @@ typedef NS_ENUM(NSUInteger, KIFPullToRefreshTiming) {
 @interface KIFUITestActor : KIFTestActor
 
 /*!
+ @abstract Controls if typing methods will validate the entered text.
+ @discussion This method will only impact the functioning of the `enterText:...` method variants.
+ 
+ @param validateEnteredText Whether or not to validate the entered text. Defaults to YES.
+ @return The message reciever, these methods are intended to be chained together.
+ */
+- (instancetype)validateEnteredText:(BOOL)validateEnteredText;
+
+/*!
  @abstract Waits until a view or accessibility element is present.
  @discussion The view or accessibility element with the given label is found in the view hierarchy. If the element isn't found, then the step will attempt to wait until it is. Note that the view does not necessarily have to be visible on the screen, and may be behind another view or offscreen. Views with their hidden property set to YES are ignored.
  
@@ -86,7 +119,6 @@ typedef NS_ENUM(NSUInteger, KIFPullToRefreshTiming) {
  @param traits The accessibility traits of the element to wait for. Elements that do not include at least these traits are ignored.
  */
 - (UIView *)waitForViewWithAccessibilityLabel:(NSString *)label traits:(UIAccessibilityTraits)traits;
-
 
 /*!
  @abstract Waits until a view or accessibility element is present.
@@ -259,7 +291,7 @@ typedef NS_ENUM(NSUInteger, KIFPullToRefreshTiming) {
 - (void)tapViewWithAccessibilityLabel:(NSString *)label value:(NSString *)value traits:(UIAccessibilityTraits)traits;
 
 /*!
- @abstract Taps a particular view in the view heirarchy.
+ @abstract Taps a particular view in the view hierarchy.
  @discussion Unlike the -tapViewWithAccessibilityLabel: family of methods, this method allows you to tap an arbitrary element.  Combined with -waitForAccessibilityElement:view:withLabel:value:traits:tappable: or +[UIAccessibilityElement accessibilityElement:view:withLabel:value:traits:tappable:error:] this provides an opportunity for more complex logic.
  @param element The accessibility element to tap.
  @param view The view containing the accessibility element.
@@ -275,7 +307,7 @@ typedef NS_ENUM(NSUInteger, KIFPullToRefreshTiming) {
 -(void)tapStepperWithAccessibilityLabel:(NSString *)accessibilityLabel increment:(KIFStepperDirection)stepperDirection;
 
 /*!
- @abstract Taps the increment|decrement button of a UIStepper view in the view heirarchy.
+ @abstract Taps the increment|decrement button of a UIStepper view in the view hierarchy.
  @discussion Unlike the -tapViewWithAccessibilityLabel: family of methods, this method allows you to tap an arbitrary element.  Combined with -waitForAccessibilityElement:view:withLabel:value:traits:tappable: or +[UIAccessibilityElement accessibilityElement:view:withLabel:value:traits:tappable:error:] this provides an opportunity for more complex logic.
  @param element The accessibility element to tap.
  @param view The view containing the accessibility element.
@@ -284,8 +316,8 @@ typedef NS_ENUM(NSUInteger, KIFPullToRefreshTiming) {
 
 /*!
  @abstract Taps the screen at a particular point.
- @discussion Taps the screen at a specific point. In general you should use the factory steps that tap a view based on its accessibility label, but there are situations where it's not possible to access a view using accessibility mechanisms. This step is more lenient than the steps that use the accessibility label, and does not wait for any particular view to appear, or validate that the tapped view is enabled or has interaction enabled. Because this step doesn't doesn't validate that a view is present before tapping it, it's good practice to precede this step where possible with a -waitForViewWithAccessibilityLabel: with the label for another view that should appear on the same screen.
- 
+ @discussion Taps the screen at a specific point. In general you should use the factory steps that tap a view based on its accessibility label, but there are situations where it's not possible to access a view using accessibility mechanisms. This step is more lenient than the steps that use the accessibility label, and does not wait for any particular view to appear, or validate that the tapped view is enabled or has interaction enabled. Because this step doesn't validate that a view is present before tapping it, it's good practice to precede this step where possible with a -waitForViewWithAccessibilityLabel: with the label for another view that should appear on the same screen.
+
  @param screenPoint The point in screen coordinates to tap. Screen points originate from the top left of the screen.
  */
 - (void)tapScreenAtPoint:(CGPoint)screenPoint;
@@ -420,11 +452,28 @@ typedef NS_ENUM(NSUInteger, KIFPullToRefreshTiming) {
 - (void)selectPickerViewRowWithTitle:(NSString *)title inComponent:(NSInteger)component;
 
 /*!
+ @abstract Selects an item from a currently visible picker view in specified component and in the specified order to search the value it selects.
+ @discussion With a picker view already visible, this step will find an item with the given title in given component, according to the search order specified, select that item, and tap the Done button. This is helpful when it is important to select values from specific location. Example: if minimum date is set, values from the start will be invalid for selection and result will be unexpected. KIFPickerSearchOrder helps solving this by specifing the search order.
+ @param title The title of the row to select.
+ @param component The component tester inteds to select the title in.
+ @param searchOrder The order in which the values are being searched for selection in each compotent.
+ */
+- (void)selectPickerViewRowWithTitle:(NSString *)title inComponent:(NSInteger)component withSearchOrder:(KIFPickerSearchOrder)searchOrder;
+
+/*!
  @abstract Selects a value from a currently visible date picker view.
- @discussion With a date picker view already visible, this step will select the different rotating weel values in order of how the array parameter is passed in. After it is done it will hide the date picker. It works with all 4 UIDatePickerMode* modes. The input parameter of type NSArray has to match in what order the date picker is displaying the values/columns. So if the locale is changing the input parameter has to be adjusted. Example: Mode: UIDatePickerModeDate, Locale: en_US, Input param: NSArray *date = @[@"June", @"17", @"1965"];. Example: Mode: UIDatePickerModeDate, Locale: de_DE, Input param: NSArray *date = @[@"17.", @"Juni", @"1965".
+ @discussion With a date picker view already visible, this step will select the different rotating wheel values in order of how the array parameter is passed in. After it is done it will hide the date picker. It works with all 4 UIDatePickerMode* modes. The input parameter of type NSArray has to match in what order the date picker is displaying the values/columns. So if the locale is changing the input parameter has to be adjusted. Example: Mode: UIDatePickerModeDate, Locale: en_US, Input param: NSArray *date = @[@"June", @"17", @"1965"];. Example: Mode: UIDatePickerModeDate, Locale: de_DE, Input param: NSArray *date = @[@"17.", @"Juni", @"1965".
  @param datePickerColumnValues Each element in the NSArray represents a rotating wheel in the date picker control. Elements from 0 - n are listed in the order of the rotating wheels, left to right.
  */
 - (void)selectDatePickerValue:(NSArray *)datePickerColumnValues;
+
+/*!
+ @abstract Selects a value from a currently visible date picker view, according to the search order specified.
+ @discussion With a date picker view already visible, this step will select the different rotating wheel values in order of how the array parameter is passed in. Each value will be searched according to the search order provided. After it is done it will hide the date picker. It works with all 4 UIDatePickerMode* modes. The input parameter of type NSArray has to match in what order the date picker is displaying the values/columns. So if the locale is changing the input parameter has to be adjusted. Example: Mode: UIDatePickerModeDate, Locale: en_US, Input param: NSArray *date = @[@"June", @"17", @"1965"];. Example: Mode: UIDatePickerModeDate, Locale: de_DE, Input param: NSArray *date = @[@"17.", @"Juni", @"1965".
+ @param datePickerColumnValues Each element in the NSArray represents a rotating wheel in the date picker control. Elements from 0 - n are listed in the order of the rotating wheels, left to right.
+ @param searchOrder The order in which the values are being searched for selection in each compotent.
+ */
+- (void)selectDatePickerValue:(NSArray *)datePickerColumnValues withSearchOrder:(KIFPickerSearchOrder)searchOrder;
 
 /*!
  @abstract Toggles a UISwitch into a specified position.
@@ -529,6 +578,13 @@ typedef NS_ENUM(NSUInteger, KIFPullToRefreshTiming) {
  @discussion Use this to dissmiss a location services authorization dialog or a photos access dialog by tapping the 'Allow' button. No action is taken if no alert is present.
  */
 - (BOOL)acknowledgeSystemAlert;
+
+/*!
+ @abstract If present, dismisses a system alert with the button at the given index, if any exists, usually 'Allow'. Returns YES if a dialog was dismissed, NO otherwise.
+ @discussion Use this to dissmiss a location services authorization dialog or a photos access dialog by tapping a button at the specified index. No action is taken if no alert is present.
+*/
+- (BOOL)acknowledgeSystemAlertWithIndex:(NSUInteger)index;
+
 #endif
 
 /*!
@@ -559,7 +615,7 @@ typedef NS_ENUM(NSUInteger, KIFPullToRefreshTiming) {
 - (void)swipeViewWithAccessibilityLabel:(NSString *)label value:(NSString *)value traits:(UIAccessibilityTraits)traits inDirection:(KIFSwipeDirection)direction;
 
 /*!
- @abstract Swipes a particular view in the view heirarchy.
+ @abstract Swipes a particular view in the view hierarchy.
  @discussion Unlike the -swipeViewWithAccessibilityLabel: family of methods, this method allows you to swipe an arbitrary element.  Combined with -waitForAccessibilityElement:view:withLabel:value:traits:tappable: or +[UIAccessibilityElement accessibilityElement:view:withLabel:value:traits:tappable:error:] this provides an opportunity for more complex logic.
  @param element The accessibility element of the view to swipe.
  @param viewToSwipe The view containing the accessibility element.
@@ -696,19 +752,33 @@ typedef NS_ENUM(NSUInteger, KIFPullToRefreshTiming) {
  @abstract Scrolls a collection view while waiting for the cell at the given indexPath to appear.
  @discussion This step will get the cell at the indexPath.
  
- For cases where you may need to work from the end of a table view rather than the beginning, negative sections count back from the end of the table view (-1 is the last section) and negative rows count back from the end of the section (-1 is the last row for that section).
- 
+ By default, scrolls to the vertical and horizontal middle of the cell. If you need to scroll to custom positions, use the @c atPosition: variation.
+ For cases where you may need to work from the end of a collection view rather than the beginning, negative sections count back from the end of the collection view (-1 is the last section) and negative rows count back from the end of the section (-1 is the last row for that section).
+
  @param indexPath Index path of the cell.
  @param collectionView UICollectionView containing the cell.
  @result Collection view cell at index path
  */
 - (UICollectionViewCell *)waitForCellAtIndexPath:(NSIndexPath *)indexPath inCollectionView:(UICollectionView *)collectionView;
 
+/*!
+ @abstract Scrolls a collection view while waiting for the cell at the given indexPath to appear.
+ @discussion This step will get the cell at the indexPath.
+
+ For cases where you may need to work from the end of a collection view rather than the beginning, negative sections count back from the end of the collection view (-1 is the last section) and negative rows count back from the end of the section (-1 is the last row for that section).
+
+ @param indexPath Index path of the cell.
+ @param collectionView UICollectionView containing the cell.
+ @param position Collection View scroll position to scroll to. Useful for custom-sized cells when the content needed is in a specific location.
+ @result Collection view cell at index path
+ */
+- (UICollectionViewCell *)waitForCellAtIndexPath:(NSIndexPath *)indexPath inCollectionView:(UICollectionView *)collectionView atPosition:(UICollectionViewScrollPosition)position;
 
 /*!
- @abstract Scrolls a given collection view while waiting for the item at the given indexPath to appear.
+ @abstract Scrolls a collection view with the given identifier while waiting for the item at the given indexPath to appear.
  @discussion This step will get the view with the specified accessibility identifier and then get the cell at indexPath.
  
+ By default, scrolls to the vertical and horizontal middle of the cell. If you need to scroll to custom positions, use the @c atPosition: variation.
  For cases where you may need to work from the end of a collection view rather than the beginning, negative sections count back from the end of the collection view (-1 is the last section) and negative items count back from the end of the section (-1 is the last item for that section).
  
  @param indexPath Index path of the item to tap.
@@ -716,6 +786,19 @@ typedef NS_ENUM(NSUInteger, KIFPullToRefreshTiming) {
  @result Collection view cell at index path
  */
 - (UICollectionViewCell *)waitForCellAtIndexPath:(NSIndexPath *)indexPath inCollectionViewWithAccessibilityIdentifier:(NSString *)identifier;
+
+/*!
+ @abstract Scrolls a collection view with the given identifier while waiting for the item at the given indexPath to appear.
+ @discussion This step will get the view with the specified accessibility identifier and then get the cell at indexPath.
+
+ For cases where you may need to work from the end of a collection view rather than the beginning, negative sections count back from the end of the collection view (-1 is the last section) and negative rows count back from the end of the section (-1 is the last row for that section).
+
+ @param indexPath Index path of the cell.
+ @param identifier Accessibility identifier of the table view.
+ @param position Collection View scroll position to scroll to. Useful for custom-sized cells when the content needed is in a specific location.
+ @result Table view cell at index path
+ */
+- (UICollectionViewCell *)waitForCellAtIndexPath:(NSIndexPath *)indexPath inCollectionViewWithAccessibilityIdentifier:(NSString *)identifier atPosition:(UICollectionViewScrollPosition)position;
 
 /*!
  @abstract Moves the row at sourceIndexPath to destinationIndexPath in a table view with the given identifier.
@@ -767,5 +850,18 @@ typedef NS_ENUM(NSUInteger, KIFPullToRefreshTiming) {
  @param duration Amount of time for a background event before the app becomes active again
  */
 - (void)deactivateAppForDuration:(NSTimeInterval)duration KIF_DEPRECATED("Use [system deactivateAppForDuration:] instead.");
+
+/*!
+ @method testActorAnimationsEnabled
+ @abstract Flag to disable/enable animations done by the UITestActor, by default this value is YES. This doesn't affect animations performed by the app being tested.
+ @discussion To change the default value of this flag, call +setTestActorAnimationsEnabled: with a different value.
+ */
++ (BOOL)testActorAnimationsEnabled;
+
+/*!
+ @method setTestActorAnimationsEnabled:
+ @abstract Sets the flag value to enable or disable animations done by the UITestActor.
+ */
++ (void)setTestActorAnimationsEnabled:(BOOL)animationsEnabled;
 
 @end
