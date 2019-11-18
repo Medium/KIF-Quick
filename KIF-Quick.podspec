@@ -12,4 +12,7 @@ Pod::Spec.new do |s|
   s.framework = 'XCTest'
   s.dependency 'KIF'
   s.dependency 'Quick'
+  s.pod_target_xcconfig = {
+    'ENABLE_BITCODE' => 'NO'
+  }
 end
