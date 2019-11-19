@@ -9,7 +9,7 @@ Pod::Spec.new do |s|
   s.swift_version = '5.0'
   s.ios.deployment_target  = '10.0'
   s.source_files = 'KIF-Quick/Classes'
-  s.framework = 'XCTest'
+  s.weak_framework = 'XCTest'
   s.dependency 'KIF'
   s.dependency 'Quick'
   s.pod_target_xcconfig = {
